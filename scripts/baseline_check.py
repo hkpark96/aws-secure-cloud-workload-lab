@@ -13,9 +13,10 @@ APPROVED_ADMIN_CIDR = os.getenv("APPROVED_ADMIN_CIDR")
 
 def rule_covers_ssh(rule):
     """Return True if an ingress rule can include TCP/22."""
+
     protocol = rule.get("IpProtocol")
 
-    # -1 means all protocols
+    # -1 means all protocols.
     if protocol == "-1":
         return True
 
@@ -33,11 +34,12 @@ def rule_covers_ssh(rule):
 
 def evaluate_security_group(sg, approved_admin_cidr):
     """
-    Evaluate SSH exposure.
+    Evaluate SSH exposure against NET-01.
 
     Result precedence:
       FAIL    : a confirmed baseline violation exists
-      UNKNOWN : no confirmed violation, but at least one source cannot be evaluated
+      UNKNOWN : no confirmed violation, but at least one source
+                cannot be fully evaluated
       PASS    : no unauthorized SSH exposure was detected
     """
 
@@ -81,14 +83,24 @@ def evaluate_security_group(sg, approved_admin_cidr):
                 continue
 
             try:
-                source_network = ipaddress.ip_network(cidr, strict=False)
+                source_network = ipaddress.ip_network(
+                    cidr,
+                    strict=False
+                )
             except ValueError:
                 unknowns.append(
                     f"Unable to parse IPv4 CIDR: {cidr}"
                 )
                 continue
 
-            if source_network != approved_network:
+            if source_network.version != 4:
+                unknowns.append(
+                    f"Unexpected non-IPv4 source in IpRanges: {cidr}"
+                )
+                continue
+
+            # Equal to or narrower than the approved range is allowed.
+            if not source_network.subnet_of(approved_network):
                 violations.append(
                     f"SSH-capable rule allows unapproved IPv4 CIDR: {cidr}"
                 )
@@ -130,20 +142,22 @@ def evaluate_security_group(sg, approved_admin_cidr):
                 "SSH-capable rule has no recognized source type."
             )
 
-    # Confirmed violation takes precedence.
+    # A confirmed violation takes precedence over UNKNOWN.
     if violations:
         return "FAIL", violations + unknowns
 
-    # No confirmed violation, but incomplete visibility.
+    # No confirmed violation, but visibility is incomplete.
     if unknowns:
         return "UNKNOWN", unknowns
 
-    # No SSH rule is also safe from an SSH-exposure perspective.
+    # No SSH rule is safe from an SSH-exposure perspective.
     if not ssh_rule_found:
         return (
             "PASS",
-            ["No SSH-capable ingress rule is present; "
-             "no unauthorized SSH exposure was detected."]
+            [
+                "No SSH-capable ingress rule is present; "
+                "no unauthorized SSH exposure was detected."
+            ]
         )
 
     return (
@@ -158,7 +172,10 @@ def main():
         sys.exit(2)
 
     try:
-        ec2 = boto3.client("ec2", region_name=REGION)
+        ec2 = boto3.client(
+            "ec2",
+            region_name=REGION
+        )
 
         response = ec2.describe_security_groups(
             GroupIds=[TARGET_SG_ID]
@@ -167,7 +184,9 @@ def main():
         sg = response["SecurityGroups"][0]
 
     except (ClientError, BotoCoreError, IndexError, KeyError) as error:
-        print(f"[UNKNOWN] Unable to inspect security group: {error}")
+        print(
+            f"[UNKNOWN] Unable to inspect security group: {error}"
+        )
         sys.exit(2)
 
     status, findings = evaluate_security_group(
@@ -175,12 +194,18 @@ def main():
         APPROVED_ADMIN_CIDR
     )
 
-    print(f"Target SG : {sg['GroupName']} ({sg['GroupId']})")
+    print(
+        f"Target SG : {sg['GroupName']} "
+        f"({sg['GroupId']})"
+    )
+
     print(f"Region    : {REGION}")
+
     print(
         "Baseline  : SSH-capable ingress must not allow "
         "sources outside the approved administrator CIDR."
     )
+
     print()
 
     print(f"[{status}] NET-01")
