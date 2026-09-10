@@ -465,7 +465,7 @@ Remediation & Re-validation                    ✅
 ### Planned
 
 ```text
-Evidence Image Documentation                   ⏳
+Evidence Image Documentation                   ✅
 EventBridge Change Detection                   ⏳
 IAM Privilege Change Scenario                  ⏳
 Nginx Troubleshooting / RCA Scenario           ⏳
