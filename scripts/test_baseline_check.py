@@ -25,9 +25,42 @@ class TestBaselineCheck(unittest.TestCase):
             ]
         }
 
-        status, _ = evaluate_security_group(sg, APPROVED)
+        status, _ = evaluate_security_group(
+            sg,
+            APPROVED
+        )
 
-        self.assertEqual(status, "PASS")
+        self.assertEqual(
+            status,
+            "PASS"
+        )
+
+    def test_narrower_cidr_inside_approved_range_is_pass(self):
+        sg = {
+            "IpPermissions": [
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 22,
+                    "ToPort": 22,
+                    "IpRanges": [
+                        {"CidrIp": "10.10.10.25/32"}
+                    ],
+                    "Ipv6Ranges": [],
+                    "UserIdGroupPairs": [],
+                    "PrefixListIds": [],
+                }
+            ]
+        }
+
+        status, _ = evaluate_security_group(
+            sg,
+            "10.10.10.0/24"
+        )
+
+        self.assertEqual(
+            status,
+            "PASS"
+        )
 
     def test_public_ssh_is_fail(self):
         sg = {
@@ -46,9 +79,15 @@ class TestBaselineCheck(unittest.TestCase):
             ]
         }
 
-        status, _ = evaluate_security_group(sg, APPROVED)
+        status, _ = evaluate_security_group(
+            sg,
+            APPROVED
+        )
 
-        self.assertEqual(status, "FAIL")
+        self.assertEqual(
+            status,
+            "FAIL"
+        )
 
     def test_wide_port_range_including_ssh_is_fail(self):
         sg = {
@@ -67,9 +106,15 @@ class TestBaselineCheck(unittest.TestCase):
             ]
         }
 
-        status, _ = evaluate_security_group(sg, APPROVED)
+        status, _ = evaluate_security_group(
+            sg,
+            APPROVED
+        )
 
-        self.assertEqual(status, "FAIL")
+        self.assertEqual(
+            status,
+            "FAIL"
+        )
 
     def test_all_protocols_public_is_fail(self):
         sg = {
@@ -86,9 +131,15 @@ class TestBaselineCheck(unittest.TestCase):
             ]
         }
 
-        status, _ = evaluate_security_group(sg, APPROVED)
+        status, _ = evaluate_security_group(
+            sg,
+            APPROVED
+        )
 
-        self.assertEqual(status, "FAIL")
+        self.assertEqual(
+            status,
+            "FAIL"
+        )
 
     def test_security_group_reference_is_unknown(self):
         sg = {
@@ -107,9 +158,15 @@ class TestBaselineCheck(unittest.TestCase):
             ]
         }
 
-        status, _ = evaluate_security_group(sg, APPROVED)
+        status, _ = evaluate_security_group(
+            sg,
+            APPROVED
+        )
 
-        self.assertEqual(status, "UNKNOWN")
+        self.assertEqual(
+            status,
+            "UNKNOWN"
+        )
 
     def test_prefix_list_is_unknown(self):
         sg = {
@@ -128,9 +185,15 @@ class TestBaselineCheck(unittest.TestCase):
             ]
         }
 
-        status, _ = evaluate_security_group(sg, APPROVED)
+        status, _ = evaluate_security_group(
+            sg,
+            APPROVED
+        )
 
-        self.assertEqual(status, "UNKNOWN")
+        self.assertEqual(
+            status,
+            "UNKNOWN"
+        )
 
     def test_no_ssh_rule_is_pass(self):
         sg = {
@@ -149,9 +212,15 @@ class TestBaselineCheck(unittest.TestCase):
             ]
         }
 
-        status, _ = evaluate_security_group(sg, APPROVED)
+        status, _ = evaluate_security_group(
+            sg,
+            APPROVED
+        )
 
-        self.assertEqual(status, "PASS")
+        self.assertEqual(
+            status,
+            "PASS"
+        )
 
     def test_invalid_approved_cidr_is_unknown(self):
         sg = {
@@ -163,7 +232,10 @@ class TestBaselineCheck(unittest.TestCase):
             "not-a-cidr"
         )
 
-        self.assertEqual(status, "UNKNOWN")
+        self.assertEqual(
+            status,
+            "UNKNOWN"
+        )
 
 
 if __name__ == "__main__":
