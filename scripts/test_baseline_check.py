@@ -3,7 +3,7 @@ import unittest
 from baseline_check import evaluate_security_group
 
 
-APPROVED = "real_public_ip/32"
+APPROVED = "203.0.113.10/32"
 
 
 class TestBaselineCheck(unittest.TestCase):
