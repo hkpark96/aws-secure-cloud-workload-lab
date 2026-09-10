@@ -6,9 +6,7 @@
 
 **Baseline → Validation → Configuration Drift → Detection → Activity Analysis → Remediation → Re-validation**
 
-이 실험의 목적은 침해사고를 재현하는 것이 아닌
-
-보안 설정이 기준에서 벗어났을 때 이를 자동으로 식별하고, 해당 상태를 만든 AWS API Activity를 추적한 뒤, 설정을 복구하고 다시 검증하는 과정을 확인하는 것이 목적입니다.
+이 실험의 목적은 침해사고를 재현하는 것이 아니라, 보안 설정이 기준에서 벗어났을 때 이를 자동으로 식별하고, 해당 상태를 만든 AWS API Activity를 추적한 뒤 설정을 복구하고 다시 검증하는 과정을 확인하는 것입니다.
 
 ---
 
@@ -122,16 +120,20 @@ Implementation:
 TCP/22 → <APPROVED_ADMIN_CIDR>/32
 ```
 
-Python/Boto3 기반 Baseline Checker가 실제 AWS Security Group 상태를 조회한 결과는 다음과 같습니다.
+Python/Boto3 기반 Baseline Checker를 실행하여 실제 AWS Security Group 상태가 NET-01을 만족하는지 확인했습니다.
+
+초기 실험 당시 Checker는 다음과 같이 `PASS`를 반환했습니다.
 
 ```text
 [PASS] NET-01
- - No unauthorized SSH exposure was detected.
+SSH administrative access is restricted to the approved CIDR.
 ```
 
 ![Baseline PASS](../images/sg-drift/01-baseline-pass.png)
 
 이 결과를 Configuration Drift 발생 전의 Known-good Posture로 사용했습니다.
+
+> **Note:** 위 캡처는 Checker의 Validation Semantics를 개선하기 전 초기 실험 결과입니다. 이후 정상 상태를 과도하게 단정하지 않도록 출력 문구와 판정 Logic을 보완했으며, 현재 Version은 `No unauthorized SSH exposure was detected.`를 출력합니다. 최종 Re-validation과 Unit Test는 개선된 Version을 기준으로 수행했습니다.
 
 ---
 
@@ -342,7 +344,7 @@ PASS
 - 현재 Checker는 Security Group의 SSH Exposure에 집중합니다.
 - Security Group Reference 및 Prefix List의 실제 Effective Source를 재귀적으로 분석하지 않습니다.
 - 단일 AWS Account 환경을 대상으로 합니다.
-- 실험 과정의 일부 관리 작업은 AWS Account Root Console Session에서 수행했으며, Production 환경에서는 appropriately scoped IAM Identity 사용이 적절합니다.
+- 실험 과정의 일부 관리 작업은 AWS Account Root Console Session에서 수행했으며, Production 환경에서는 필요한 권한만 부여된 IAM Identity를 사용하는 것이 적절합니다.
 - 현재는 지속적인 Enterprise-wide Posture Management 또는 Automatic Remediation을 구현하지 않았습니다.
 
 향후 다음과 같은 방향으로 확장할 수 있습니다.
